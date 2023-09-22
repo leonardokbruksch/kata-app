@@ -5,6 +5,9 @@
 
 A REST API for storing and retrieving truck GPS coordinates, mass data, and data timestamp.
 
+This project is built using Node.js, Express, and the AWS CDK. The API is designed as a serverless application and all Amazon cloud is created programmatically using the CDK.
+
+
 ### Setup & Deployment
 
 1. Ensure you have AWS CDK installed and configured with appropriate AWS credentials.
