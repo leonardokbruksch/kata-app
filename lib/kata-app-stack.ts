@@ -8,17 +8,29 @@ export class KataAppStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const gpsDataTable = new dynamodb.Table(this, 'GpsDataTable', {
+    const locationTable = new dynamodb.Table(this, 'LocationTable', {
       partitionKey: {
-        name: 'uniqueId',
+        name: 'truckId',
         type: dynamodb.AttributeType.STRING,
       },
       sortKey: {
         name: 'timestamp',
         type: dynamodb.AttributeType.NUMBER,
       },
-      tableName: 'GpsDataTable',
+      tableName: 'LocationTable',
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+    });
+
+    locationTable.addGlobalSecondaryIndex({
+      indexName: 'Timestamp-Index',
+      partitionKey: {
+        name: 'gpsData',
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: 'timestamp',
+        type: dynamodb.AttributeType.NUMBER,
+      },
     });
 
     const myLambda = new lambda.Function(this, 'lambdaFunction', {
@@ -33,10 +45,9 @@ export class KataAppStack extends cdk.Stack {
       handler: myLambda,
     });
 
-    gpsDataTable.grantReadWriteData(myLambda);
-    myLambda.addEnvironment('GpsDataTable', gpsDataTable.tableName);
+    locationTable.grantReadWriteData(myLambda);
+    myLambda.addEnvironment('locationTable', locationTable.tableName);
 
-    // Output the API endpoint URL
     new cdk.CfnOutput(this, 'APIURL', {
       value: api.url,
     });
