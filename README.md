@@ -46,24 +46,35 @@ This project is built using Node.js, Express, and the AWS CDK. The API is design
        "timestamp": "number"
      }
      ```
+   - Example of a valid JSON:
+     ```json
+     {
+       "truckId": "truck211",
+       "latitude": 41.8128,
+       "longitude": 72.3060,
+       "mass": 53.3,
+       "timestamp": 3687632123499
+     }
+     ```
+
    - Responses:
      - `201 Created`: Location added successfully.
      - `400 Bad Request`: Missing data.
      - `500 Internal Server Error`: Could not persist coordinates.
 
-2. **GET `/location`**
+1. **GET `/location`**
    - Retrieve the 10 most recent datapoints.
    - Responses:
      - `200 OK`: Returns an array of recent data points.
      - `500 Internal Server Error`: Failed to fetch recent data.
 
-3. **GET `/allTrucksLocations`**
+2. **GET `/allTrucksLocations`**
    - Get the locations of all trucks.
    - Responses:
      - `200 OK`: Returns an array of all truck data points.
      - `500 Internal Server Error`: Failed to fetch recent data.
 
-4. **GET `/truckLocation`**
+3. **GET `/truckLocation`**
    - Get the 10 most recent datapoints of a specific truck.
    - Query Params:
      - `truckId`: The unique identifier of the truck.
