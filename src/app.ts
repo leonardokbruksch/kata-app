@@ -29,6 +29,37 @@ app.post('/location', async (request: Request, response: Response) => {
   }
 
   try {
+    const params = {
+      TableName: TABLE_NAME,
+      KeyConditionExpression: 'truckId = :truckIdValue',
+      ExpressionAttributeValues: {
+        ':truckIdValue': truckId,
+      },
+      Limit: 1,
+      ScanIndexForward: false,
+    };
+
+    const recentLocations = await db.query(params).promise();
+
+    if (
+      recentLocations.Items &&
+      recentLocations.Items.length &&
+      recentLocations.Items[0].coordinates.latitude === latitude &&
+      recentLocations.Items[0].coordinates.longitude === longitude
+    ) {
+      console.log('IDENTICAL!!!');
+
+      const idleDuration: number =
+        timestamp - recentLocations.Items[0].timestamp;
+
+      return response.status(200).send({
+        message:
+          'Location unchanged. Data not saved. Truck has been idle for: ' +
+          idleDuration +
+          ' ms.',
+      });
+    }
+
     const location: TruckData = {
       truckId: truckId,
       timestamp: timestamp,
@@ -46,34 +77,14 @@ app.post('/location', async (request: Request, response: Response) => {
         Item: location,
       })
       .promise();
+
+    return response
+      .status(201)
+      .send({ message: 'Location added successfully!' });
   } catch (error) {
     console.error(error);
     response.status(500).json({ message: 'Could not persist coordinates.' });
     return;
-  }
-
-  return response.status(201).send({ message: 'Location added successfully!' });
-});
-
-app.get('/location', async (request: Request, response: Response) => {
-  try {
-    const params = {
-      TableName: TABLE_NAME,
-      IndexName: 'Timestamp-Index',
-      KeyConditionExpression: 'gpsData = :gpsDataValue',
-      ExpressionAttributeValues: {
-        ':gpsDataValue': SECONDARY_INDEX,
-      },
-      Limit: 10,
-      ScanIndexForward: false,
-    };
-
-    const result = await db.query(params).promise();
-
-    response.status(200).send(result.Items);
-  } catch (error) {
-    console.error(error);
-    response.status(500).send('Failed to fetch recent data.');
   }
 });
 
@@ -118,5 +129,19 @@ app.get('/truckLocation', async (request: Request, response: Response) => {
     return response.status(500).send('Failed to fetch recent data.');
   }
 });
+
+function millisToHumanReadable(millis: number): string {
+  const seconds = Math.floor(millis / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+
+  const humanReadable = [
+    hours ? `${hours}h` : '',
+    minutes % 60 ? `${minutes % 60}m` : '',
+    seconds % 60 ? `${seconds % 60}s` : '',
+  ].join(' ');
+
+  return humanReadable;
+}
 
 export default app;
