@@ -41,15 +41,39 @@ export class KataAppStack extends cdk.Stack {
       memorySize: 128,
     });
 
-    const api = new apigateway.LambdaRestApi(this, 'Endpoint', {
-      handler: myLambda,
-    });
-
     locationTable.grantReadWriteData(myLambda);
     myLambda.addEnvironment('locationTable', locationTable.tableName);
 
-    new cdk.CfnOutput(this, 'APIURL', {
-      value: api.url,
+    const api = new apigateway.LambdaRestApi(this, 'Endpoint', {
+      handler: myLambda,
+      proxy: false,
+      defaultMethodOptions: { apiKeyRequired: true },
     });
+
+    api.root.addMethod('ANY', undefined, { apiKeyRequired: true });
+
+    const locationResource = api.root.addResource('location');
+    locationResource.addMethod('POST');
+    locationResource.addMethod('GET');
+
+    const allTrucksResource = api.root.addResource('allTrucksLocations');
+    allTrucksResource.addMethod('GET');
+
+    const truckLocationResource = api.root.addResource('truckLocation');
+    truckLocationResource.addMethod('GET');
+
+    const apiKey = new apigateway.ApiKey(this, 'ApiKey');
+
+    const plan = new apigateway.UsagePlan(this, 'UsagePlan', {
+      name: 'MyUsagePlan',
+      apiStages: [
+        {
+          api: api,
+          stage: api.deploymentStage,
+        },
+      ],
+    });
+
+    plan.addApiKey(apiKey);
   }
 }
